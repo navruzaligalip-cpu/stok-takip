@@ -9,7 +9,6 @@ const categoryRoutes  = require('./routes/categories');
 const movementRoutes  = require('./routes/movements');
 const errorHandler    = require('./middleware/errorHandler');
 
-// Uygulama başlangıcında DB'yi başlat
 require('./db/database');
 
 const app = express();

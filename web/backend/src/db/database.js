@@ -7,7 +7,6 @@ const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
-// ─── ŞEMA ────────────────────────────────────────────────────────────────────
 db.exec(`
   CREATE TABLE IF NOT EXISTS categories (
     id         TEXT    PRIMARY KEY,
@@ -66,7 +65,6 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_movements_date     ON stock_movements(created_at);
 `);
 
-// ─── SEED VERİSİ ─────────────────────────────────────────────────────────────
 const seedCount = db.prepare('SELECT COUNT(*) as c FROM categories').get().c;
 
 if (seedCount === 0) {
@@ -85,39 +83,29 @@ if (seedCount === 0) {
   db.prepare('INSERT INTO suppliers (id,name,phone,email) VALUES (?,?,?,?)').run(sup.id, sup.name, sup.phone, sup.email);
 
   const products = [
-    { id: uuidv4(), sku: 'ELK-001', name: 'Laptop 15"',         barcode: '1234567890001', cat: cats[0].id, sup: sup.id, unit: 'adet',   buy: 8500,  sell: 11000, vat: 20, qty: 15, min: 3 },
-    { id: uuidv4(), sku: 'ELK-002', name: 'Kablosuz Klavye',     barcode: '1234567890002', cat: cats[0].id, sup: sup.id, unit: 'adet',   buy: 150,   sell: 250,   vat: 20, qty: 2,  min: 5 },
-    { id: uuidv4(), sku: 'ELK-003', name: 'USB-C Hub 7 Port',    barcode: '1234567890003', cat: cats[0].id, sup: sup.id, unit: 'adet',   buy: 220,   sell: 380,   vat: 20, qty: 28, min: 5 },
-    { id: uuidv4(), sku: 'OFS-001', name: 'A4 Kağıt 500 Yaprak', barcode: '1234567890004', cat: cats[1].id, sup: sup.id, unit: 'paket',  buy: 45,    sell: 75,    vat: 8,  qty: 0,  min: 10 },
-    { id: uuidv4(), sku: 'OFS-002', name: 'Tükenmez Kalem 12li', barcode: '1234567890005', cat: cats[1].id, sup: sup.id, unit: 'kutu',   buy: 18,    sell: 32,    vat: 8,  qty: 60, min: 10 },
-    { id: uuidv4(), sku: 'TMZ-001', name: 'Sıvı Sabun 1L',       barcode: '1234567890006', cat: cats[2].id, sup: sup.id, unit: 'litre',  buy: 22,    sell: 38,    vat: 18, qty: 50, min: 8 },
-    { id: uuidv4(), sku: 'GDA-001', name: 'Filtre Kahve 250g',   barcode: '1234567890007', cat: cats[3].id, sup: sup.id, unit: 'paket',  buy: 65,    sell: 95,    vat: 1,  qty: 4,  min: 5 },
+    { id: uuidv4(), sku: 'ELK-001', name: 'Laptop 15"', barcode: '1234567890001', cat: cats[0].id, sup: sup.id, unit: 'adet', buy: 8500, sell: 11000, vat: 20, qty: 15, min: 3 },
+    { id: uuidv4(), sku: 'ELK-002', name: 'Kablosuz Klavye', barcode: '1234567890002', cat: cats[0].id, sup: sup.id, unit: 'adet', buy: 150, sell: 250, vat: 20, qty: 2, min: 5 },
+    { id: uuidv4(), sku: 'ELK-003', name: 'USB-C Hub 7 Port', barcode: '1234567890003', cat: cats[0].id, sup: sup.id, unit: 'adet', buy: 220, sell: 380, vat: 20, qty: 28, min: 5 },
+    { id: uuidv4(), sku: 'OFS-001', name: 'A4 Kagit 500 Yaprak', barcode: '1234567890004', cat: cats[1].id, sup: sup.id, unit: 'paket', buy: 45, sell: 75, vat: 8, qty: 0, min: 10 },
+    { id: uuidv4(), sku: 'OFS-002', name: 'Tukenmez Kalem 12li', barcode: '1234567890005', cat: cats[1].id, sup: sup.id, unit: 'kutu', buy: 18, sell: 32, vat: 8, qty: 60, min: 10 },
+    { id: uuidv4(), sku: 'TMZ-001', name: 'Sivi Sabun 1L', barcode: '1234567890006', cat: cats[2].id, sup: sup.id, unit: 'litre', buy: 22, sell: 38, vat: 18, qty: 50, min: 8 },
+    { id: uuidv4(), sku: 'GDA-001', name: 'Filtre Kahve 250g', barcode: '1234567890007', cat: cats[3].id, sup: sup.id, unit: 'paket', buy: 65, sell: 95, vat: 1, qty: 4, min: 5 },
   ];
 
-  const insertP = db.prepare(`
-    INSERT INTO products (id,sku,name,barcode,category_id,supplier_id,unit,buy_price,sell_price,vat_rate,quantity,min_threshold)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
-  `);
-  const insertM = db.prepare(`
-    INSERT INTO stock_movements (id,product_id,type,quantity,prev_quantity,new_quantity,unit_price,total_amount,notes,user_name)
-    VALUES (?,?,?,?,?,?,?,?,?,?)
-  `);
+  const insertP = db.prepare(`INSERT INTO products (id,sku,name,barcode,category_id,supplier_id,unit,buy_price,sell_price,vat_rate,quantity,min_threshold) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`);
+  const insertM = db.prepare(`INSERT INTO stock_movements (id,product_id,type,quantity,prev_quantity,new_quantity,unit_price,total_amount,notes,user_name) VALUES (?,?,?,?,?,?,?,?,?,?)`);
 
   products.forEach(p => {
     insertP.run(p.id, p.sku, p.name, p.barcode, p.cat, p.sup, p.unit, p.buy, p.sell, p.vat, p.qty, p.min);
-    if (p.qty > 0) {
-      insertM.run(uuidv4(), p.id, 'in', p.qty, 0, p.qty, p.buy, p.qty * p.buy, 'Başlangıç stoğu', 'Sistem');
-    }
+    if (p.qty > 0) insertM.run(uuidv4(), p.id, 'in', p.qty, 0, p.qty, p.buy, p.qty * p.buy, 'Baslangic stogu', 'Sistem');
   });
 
-  // 2 satış hareketi
-  insertM.run(uuidv4(), products[0].id, 'out', 3, 15, 12, products[0].sell, 3 * products[0].sell, 'Müşteri satışı', 'Admin');
+  insertM.run(uuidv4(), products[0].id, 'out', 3, 15, 12, products[0].sell, 3 * products[0].sell, 'Musteri satisi', 'Admin');
   db.prepare('UPDATE products SET quantity=12 WHERE id=?').run(products[0].id);
-
-  insertM.run(uuidv4(), products[5].id, 'out', 8, 50, 42, products[5].sell, 8 * products[5].sell, 'Satış', 'Admin');
+  insertM.run(uuidv4(), products[5].id, 'out', 8, 50, 42, products[5].sell, 8 * products[5].sell, 'Satis', 'Admin');
   db.prepare('UPDATE products SET quantity=42 WHERE id=?').run(products[5].id);
 
-  console.log('  🌱 Seed verisi oluşturuldu.');
+  console.log('  Seed verisi olusturuldu.');
 }
 
 module.exports = db;
